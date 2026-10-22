@@ -1158,7 +1158,7 @@ func buildDestination(ctx RouteContext, to k8s.BackendRef, ns string,
 		}
 		hostname = string(to.Name) + "." + namespace + ".svc." + ctx.DomainSuffix
 		key := namespace + "/" + string(to.Name)
-		if !kubernetesServiceBackendExists(ctx, hostname, namespace, key) {
+		if !backendExists(ctx, hostname, namespace, key) {
 			invalidBackendErr = &ConfigError{Reason: InvalidDestinationNotFound, Message: fmt.Sprintf("backend(%s) not found", hostname)}
 		}
 	case config.GroupVersionKind{Group: gvk.ServiceEntry.Group, Kind: "Hostname"}:
@@ -1176,9 +1176,8 @@ func buildDestination(ctx RouteContext, to k8s.BackendRef, ns string,
 			// No problem, we can just treat it as Service, which is already cross-cluster in this mode anyways
 			hostname = string(to.Name) + "." + namespace + ".svc." + ctx.DomainSuffix
 		}
-		// TODO: currently we are always looking for Service. We should be looking for ServiceImport when features.EnableMCSHost
 		key := namespace + "/" + string(to.Name)
-		if !kubernetesServiceBackendExists(ctx, hostname, namespace, key) {
+		if !backendExists(ctx, hostname, namespace, key) {
 			invalidBackendErr = &ConfigError{Reason: InvalidDestinationNotFound, Message: fmt.Sprintf("backend(%s) not found", hostname)}
 		}
 	case gvk.InferencePool:
@@ -1258,7 +1257,8 @@ func buildDestination(ctx RouteContext, to k8s.BackendRef, ns string,
 	}, nil, invalidBackendErr
 }
 
-func kubernetesServiceBackendExists(ctx RouteContext, hostname, namespace, key string) bool {
+func backendExists(ctx RouteContext, hostname, namespace, key string) bool {
+	// TODO: currently we are always looking for Service. We should be looking for ServiceImport when features.EnableMCSHost
 	if krt.ResourceExists(ctx.Krt, ctx.Services, key) {
 		return true
 	}
